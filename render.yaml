@@ -2,7 +2,6 @@ services:
   - type: web
     name: elevator-ems-backend
     runtime: python
-    rootDir: backend
     buildCommand: bash ./build.sh
     startCommand: gunicorn config.asgi:application -c gunicorn.conf.py
     healthCheckPath: /health/
