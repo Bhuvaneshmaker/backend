@@ -1,3 +1,4 @@
+import json
 from functools import lru_cache
 
 from django.conf import settings
@@ -13,6 +14,13 @@ EXPO_PUSH_ENDPOINT = "https://exp.host/--/api/v2/push/send"
 def get_firebase_app():
     if firebase_admin._apps:
         return firebase_admin.get_app()
+
+    if settings.FIREBASE_CREDENTIALS_JSON:
+        cred = credentials.Certificate(json.loads(settings.FIREBASE_CREDENTIALS_JSON))
+        return firebase_admin.initialize_app(
+            cred,
+            {"projectId": settings.FIREBASE_PROJECT_ID or None},
+        )
 
     if not settings.FIREBASE_CREDENTIALS_PATH:
         return None
