@@ -1,1 +1,7 @@
-from .dev import *  # noqa: F401,F403
+"""Settings package for the Elevator EMS backend.
+
+Import a concrete module explicitly, for example:
+
+- config.settings.dev
+- config.settings.prod
+"""

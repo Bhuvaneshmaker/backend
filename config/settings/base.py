@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import warnings
 
 import dj_database_url
 from dotenv import load_dotenv
@@ -12,10 +13,14 @@ load_dotenv(BASE_DIR / ".env")
 def csv_env(name: str, default: str = "") -> list[str]:
     return [value.strip() for value in os.getenv(name, default).split(",") if value.strip()]
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "change-me")
-DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
+
+def env_value(name: str, default: str = "") -> str:
+    return os.getenv(name, default).strip().strip('"').strip("'")
+
+SECRET_KEY = env_value("DJANGO_SECRET_KEY", "change-me")
+DEBUG = env_value("DJANGO_DEBUG", "False").lower() == "true"
 ALLOWED_HOSTS = csv_env("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
-render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
+render_hostname = env_value("RENDER_EXTERNAL_HOSTNAME")
 if render_hostname and render_hostname not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(render_hostname)
 
@@ -68,15 +73,27 @@ TEMPLATES = [
     }
 ]
 
-database_url = os.getenv("DATABASE_URL", "").strip()
+database_url = env_value("DATABASE_URL")
 if database_url:
-    DATABASES = {
-        "default": dj_database_url.parse(
-            database_url,
-            conn_max_age=int(os.getenv("DB_CONN_MAX_AGE", "600")),
-            ssl_require=os.getenv("DB_SSL_REQUIRE", "True").lower() == "true",
+    try:
+        DATABASES = {
+            "default": dj_database_url.parse(
+                database_url,
+                conn_max_age=int(env_value("DB_CONN_MAX_AGE", "600")),
+                ssl_require=env_value("DB_SSL_REQUIRE", "True").lower() == "true",
+            )
+        }
+    except ValueError:
+        warnings.warn(
+            "DATABASE_URL is set but invalid. Falling back to local sqlite database.",
+            stacklevel=2,
         )
-    }
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
+        }
 else:
     DATABASES = {
         "default": {
@@ -133,12 +150,12 @@ else:
         }
     }
 
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://127.0.0.1:27017")
-MONGODB_NAME = os.getenv("MONGODB_NAME", "elevator_ems")
+MONGODB_URI = env_value("MONGODB_URI", "mongodb://127.0.0.1:27017")
+MONGODB_NAME = env_value("MONGODB_NAME", "elevator_ems")
 
-FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH", "")
-FIREBASE_CREDENTIALS_JSON = os.getenv("FIREBASE_CREDENTIALS_JSON", "")
-FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", "")
+FIREBASE_CREDENTIALS_PATH = env_value("FIREBASE_CREDENTIALS_PATH")
+FIREBASE_CREDENTIALS_JSON = env_value("FIREBASE_CREDENTIALS_JSON")
+FIREBASE_PROJECT_ID = env_value("FIREBASE_PROJECT_ID")
 
-UDP_LISTENER_HOST = os.getenv("UDP_LISTENER_HOST", "0.0.0.0")
-UDP_LISTENER_PORT = int(os.getenv("UDP_LISTENER_PORT", "9000"))
+UDP_LISTENER_HOST = env_value("UDP_LISTENER_HOST", "0.0.0.0")
+UDP_LISTENER_PORT = int(env_value("UDP_LISTENER_PORT", "9000"))
