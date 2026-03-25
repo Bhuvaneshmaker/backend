@@ -14,12 +14,16 @@ Copy `.env.example` to `.env` and set MongoDB, Redis, and Firebase values.
 
 For Render, this project expects:
 
-- `DATABASE_URL` from Render Postgres
-- `REDIS_URL` from Render Key Value
 - `MONGODB_URI` from MongoDB Atlas or another hosted MongoDB
 - `DJANGO_SETTINGS_MODULE=config.settings.prod`
 - `CORS_ALLOWED_ORIGINS=https://mobileems.vercel.app`
 - `CSRF_TRUSTED_ORIGINS=https://mobileems.vercel.app`
+
+For a MongoDB-only prototype deployment:
+
+- leave `DATABASE_URL` empty so Django falls back to local SQLite
+- leave `REDIS_URL` empty so Channels falls back to in-memory sockets
+- keep `MONGODB_URI` pointed at MongoDB Atlas
 
 ## Run
 
@@ -79,13 +83,13 @@ Recommended Render setup:
 2. In Render, create a new Blueprint and select the repository.
 3. Let Render create:
    - one web service for Django ASGI
-   - one Render Postgres database
-   - one Render Key Value instance
 4. In the service environment, fill the required secret values:
    - `MONGODB_URI`
    - `FIREBASE_PROJECT_ID`
    - `FIREBASE_CREDENTIALS_JSON` with the full Firebase service-account JSON for Render
    - `FIREBASE_CREDENTIALS_PATH` only if you are mounting a credentials file yourself
+   - leave `DATABASE_URL` empty for the MongoDB-only prototype flow
+   - leave `REDIS_URL` empty unless you later add Render Key Value
 5. Deploy and verify:
    - `/health/`
    - `/api/health/`
@@ -94,6 +98,8 @@ Important:
 
 - This backend should run as `ASGI`, not `WSGI`, because it uses Django Channels and WebSockets.
 - Render Web Services are the right place for the HTTP and WebSocket API.
+- `REDIS_URL` is only the Redis server connection string for shared websocket/pubsub state. It is optional in this prototype because the backend falls back to Django's in-memory channel layer when `REDIS_URL` is blank.
+- `DATABASE_URL` is only for Django's SQL database layer. In this prototype it can stay blank, and the app will use SQLite locally on the Render instance.
 - The raw UDP ingest listener should stay outside Render or behind another gateway/service that accepts UDP, then forward parsed data into this backend.
 
 ## API Areas
